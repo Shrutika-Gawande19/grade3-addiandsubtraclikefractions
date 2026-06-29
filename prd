@@ -1,0 +1,302 @@
+# 📋 Product Requirements Document (PRD)
+
+## FractionQuest: Addition & Subtraction of Like Fractions
+### Grade 3 Math — Gamified Simulation Website
+**Platform:** intelliasg.com | **Target Audience:** Grade 3 Students (Ages 8–9) | **Version:** 1.0
+**Prepared for:** Intellia SG | **Date:** June 2026
+
+---
+
+## 1. Executive Summary
+
+**FractionQuest** is a fully gamified, simulation-based interactive web lesson designed for Grade 3 students globally. It covers the curriculum topic of **Addition and Subtraction of Like (Related) Fractions** — fractions that share the same denominator — in alignment with the Intellia SG Grade 3 Math program (Section 5: Fractions, Lessons 5.5–5.6).
+
+The experience is story-driven, visually rich, and built in React. It follows the established Intellia SG pedagogical and visual design language seen in the `equal-tau.vercel.app` reference, combining **immersive narrated storytelling → simulation-based concept learning → randomised gamified practice** in a seamless, single-page flow.
+
+The site will live at `intelliasg.com/courses/grade-3-math` and must match Intellia's existing visual identity and UX patterns exactly.
+
+---
+
+## 2. Problem Statement
+
+Fractions are one of the most conceptually challenging topics for Grade 3 learners worldwide. Students often struggle because:
+
+- They try to add/subtract both numerators and denominators instead of keeping denominators the same.
+- Abstract number notation disconnects them from real-world meaning.
+- Traditional drill-and-practice is not engaging enough for 8–9 year olds.
+- Global classrooms need culturally neutral, visually accessible content.
+
+**FractionQuest** solves this by embedding the concept inside an adventure story with named characters (John, Sarah, Mike, Priya, Leo), visual pizza/pie/ribbon simulations, and a reward-driven gamification loop — so that learning feels like play.
+
+---
+
+## 3. Goals & Success Metrics
+
+### Product Goals
+| Goal | Description |
+|------|-------------|
+| Conceptual clarity | Students understand that only numerators change when denominators are the same |
+| Engagement | 80%+ of students complete the full lesson flow without dropping off |
+| Mastery | Students score ≥ 70% on the Practice round on first attempt |
+| Accessibility | Works on desktop and tablet; WCAG AA colour contrast |
+| Platform fit | Visual/UX consistency with intelliasg.com and equal-tau.vercel.app |
+
+### Key Metrics to Track
+- Time on lesson (target: 15–25 minutes)
+- Practice completion rate
+- Average score on randomised questions
+- Replay rate (students who redo practice)
+- Audio engagement rate (% who keep audio on)
+
+---
+
+## 4. Target Audience
+
+### Primary Users
+- **Grade 3 students**, ages 8–9, globally
+- English as primary or strong second language
+- Using tablets or desktop computers in school or at home
+
+### Secondary Users
+- **Teachers** who assign the lesson via intelliasg.com LMS
+- **Parents** who monitor progress through the student dashboard
+
+### Global Curriculum Alignment
+| Country / Board | Related Standard |
+|-----------------|-----------------|
+| Singapore MOE | Primary 3 — Fractions: adding and subtracting like fractions |
+| USA (Common Core) | 3.NF.A.1 — Understanding fractions; 4.NF.B.3 — Add/subtract fractions |
+| UK (National Curriculum) | Year 4 — Add and subtract fractions with the same denominator |
+| Australia (ACARA) | Year 3/4 — Fractions and decimals |
+| India (NCERT) | Class 3/4 — Fraction operations |
+| Canada | Grade 3 — Fractions as parts of a whole |
+
+*(The concept of adding/subtracting like fractions appears across all major Grade 3 curricula globally, typically introduced in Grade 3 or consolidated in Grade 4.)*
+
+---
+
+## 5. Product Scope
+
+### In Scope
+- Story-driven intro scene with narration and character dialogue
+- 3 simulation modules (visual concept builders)
+- Randomised practice quiz (10 questions per session, reshuffled each time)
+- Gamification: XP points, stars, a progress bar, badge unlocks
+- Animated audio narration synced to story events
+- Responsive layout (desktop + tablet)
+- React SPA, deployable to intelliasg.com
+
+### Out of Scope (v1.0)
+- Unlike (different denominator) fractions
+- Mixed numbers
+- Teacher/admin dashboard analytics
+- Offline mode / PWA
+- Multi-language localisation
+- Mobile-first layout (mobile is stretch goal for v2)
+
+---
+
+## 6. Story & Narrative Design
+
+### Story Title: *"The Great Fraction Festival"*
+
+### Setting
+The colourful town of **Numberville** is holding its annual **Fraction Festival**. Four friends — **John**, **Sarah**, **Mike**, and **Priya** — are baking pies, decorating ribbons, and sharing pizzas to get ready for the big celebration. But they keep running into fraction puzzles that only the student (the player) can help them solve!
+
+### Characters
+| Character | Role | Personality |
+|-----------|------|-------------|
+| **John** | Pizza chef | Cheerful, enthusiastic, makes mistakes and learns |
+| **Sarah** | Ribbon decorator | Careful, methodical, asks good questions |
+| **Mike** | Pie baker | Funny, loves eating, always confused about fractions |
+| **Priya** | Festival organiser | Wise, encouraging, gives hints |
+| **Leo** (narrator) | Friendly owl mascot | Warm voice, narrates transitions, gives feedback |
+
+### Narrative Arc
+1. **Scene 1 — The Pizza Problem (Addition):** John baked a pizza cut into 8 equal slices. He ate 2/8 in the morning and 3/8 in the afternoon. "How much pizza did I eat altogether?" → Introduces **addition of like fractions**.
+2. **Scene 2 — The Ribbon Riddle (Subtraction):** Sarah has 5/6 of a ribbon left. She uses 2/6 to wrap a gift. "How much ribbon is left?" → Introduces **subtraction of like fractions**.
+3. **Scene 3 — Mike's Pie Mix-up (Both):** Mike accidentally mixed up his pie pieces. Students must solve both addition and subtraction problems to sort things out.
+4. **Scene 4 — Practice Arena:** "You're ready for the Festival! Help Priya set up the stalls by solving fraction challenges!"
+
+---
+
+## 7. Learning Flow (Pedagogical Structure)
+
+```
+[Story Intro] → [Concept 1: Addition] → [Simulation 1] → [Concept 2: Subtraction]
+→ [Simulation 2] → [Combined Concept] → [Simulation 3] → [Practice Quiz] → [Badge & Celebration]
+```
+
+### Phase 1: Learning (≈ 10 minutes)
+Story scenes, narrated explanations, and interactive simulations. No pressure, no scoring.
+
+### Phase 2: Guided Practice (≈ 5 minutes)
+3 scaffolded questions with hints enabled, step-by-step visual feedback.
+
+### Phase 3: Independent Practice (≈ 5–8 minutes)
+10 fully randomised questions, timed per question (optional), scored, with immediate visual feedback.
+
+### Phase 4: Celebration
+Badge award, XP total, stars earned, option to replay.
+
+---
+
+## 8. Feature Specifications
+
+### 8.1 Story & Narration Engine
+- Animated character dialogue boxes appear with speech bubbles
+- Leo the Owl narrates scene transitions (audio + subtitles)
+- Audio script matches the story scenes described in Section 6
+- Skip button available for returning students
+- Audio auto-plays; mute button in top-right corner
+
+### 8.2 Simulation Module 1 — Pizza Fraction Builder (Addition)
+**Objective:** Show that adding like fractions means adding numerators only.
+
+**Interaction:**
+1. A pizza appears, sliced into equal parts (denominator shown visually)
+2. Student drags shaded slices to represent the first fraction
+3. Student drags more slices to add the second fraction
+4. Pizza animates to highlight the combined shaded region
+5. Fraction equation builds on screen: `2/8 + 3/8 = 5/8`
+
+**Key Learning Callout:** "The bottom number (denominator) stays the same — we only add the top numbers!"
+
+### 8.3 Simulation Module 2 — Ribbon Fraction Cutter (Subtraction)
+**Objective:** Show that subtracting like fractions means subtracting numerators only.
+
+**Interaction:**
+1. A coloured ribbon divided into equal segments appears
+2. Full fraction highlighted (e.g., 5/6 is shown in colour)
+3. Student clicks/taps segments to "cut away" the subtracted amount
+4. Remaining coloured segments light up
+5. Equation builds: `5/6 − 2/6 = 3/6`
+
+### 8.4 Simulation Module 3 — Pie Sorting Challenge (Combined)
+**Objective:** Consolidate both operations with choice-based interaction.
+
+**Interaction:**
+1. Mike presents a mixed set of pie problems
+2. Student first identifies whether it's addition or subtraction
+3. Then uses a visual number bar to select the answer
+4. Pie animates to confirm correct answer
+
+### 8.5 Gamification System
+| Element | Description |
+|---------|-------------|
+| **XP Points** | Earned for correct answers; bonus XP for speed |
+| **Stars** | 1–3 stars per Practice question based on accuracy + speed |
+| **Progress Bar** | Top of screen showing lesson completion % |
+| **Badges** | "Fraction Explorer" (finish learning), "Pizza Pro" (first correct answer), "Perfect Slicer" (all 10 correct) |
+| **Streak Counter** | Consecutive correct answers highlighted with animation |
+| **Confetti** | Triggered on badge unlock and lesson completion |
+
+### 8.6 Practice Quiz Engine
+- 10 questions per session
+- **Fully randomised** — new set every time the student plays
+- Question types:
+  - Type A: `a/n + b/n = ?` (select the answer from 3 options)
+  - Type B: `a/n − b/n = ?` (fill in the numerator)
+  - Type C: Word problem with visual (e.g., "John ate 3/8 of a pizza...")
+  - Type D: Match the equation to the visual
+- Denominators used: 2, 3, 4, 5, 6, 8, 10 (grade-appropriate)
+- Immediate visual feedback: green animation for correct, gentle red shake for incorrect
+- Hint available after 2 wrong attempts (costs 10 XP)
+- No negative marking
+
+### 8.7 Audio System
+- Leo the Owl narrates each scene in a warm, upbeat child-friendly voice
+- Sound effects: correct answer chime, wrong answer soft buzz, confetti pop, badge unlock fanfare
+- All audio matches the tone of the provided reference audio file
+- Subtitles toggle (on by default)
+- Audio assets: `.mp3` format, preloaded on app start
+
+### 8.8 Progress Persistence
+- Session progress stored in `localStorage`
+- If student leaves and returns, they resume from last checkpoint
+- Practice scores visible in Intellia student dashboard via API callback
+
+---
+
+## 9. User Stories
+
+| ID | As a... | I want to... | So that... |
+|----|---------|--------------|------------|
+| US-01 | Student | Hear a story about John and his pizza | I understand fractions in a fun context |
+| US-02 | Student | Drag pizza slices to add fractions | I see the concept visually, not just as numbers |
+| US-03 | Student | Get random questions every time I practice | I can't memorise answers — I actually learn |
+| US-04 | Student | Earn stars and XP | I feel motivated to keep going |
+| US-05 | Student | Get a badge at the end | I feel proud of finishing |
+| US-06 | Teacher | Assign this lesson via intelliasg.com | My students can complete it as homework |
+| US-07 | Parent | See my child's score in the dashboard | I know how they're progressing |
+
+---
+
+## 10. Non-Functional Requirements
+
+| Requirement | Specification |
+|-------------|---------------|
+| **Performance** | Page load < 3 seconds on 10 Mbps; simulation renders at 60fps |
+| **Accessibility** | WCAG 2.1 AA; keyboard navigable; screen reader compatible labels |
+| **Browser Support** | Chrome 110+, Firefox 115+, Safari 16+, Edge 110+ |
+| **Responsive** | Optimised for 1024px+ (desktop/tablet); functional at 768px |
+| **Audio** | Auto-play with user gesture fallback; graceful silent mode |
+| **Security** | No PII collected client-side; scores sent to Intellia API via HTTPS |
+
+---
+
+## 11. Visual & UX Design Principles
+
+The design **strictly follows** the visual language established in `equal-tau.vercel.app` and the `dsamyak/equal` GitHub repository:
+
+- **Colour palette:** Warm, saturated primaries on a soft cream/white background; consistent with Intellia SG brand
+- **Typography:** Rounded, friendly sans-serif (matching existing Intellia lessons)
+- **Illustrations:** Flat cartoon style, culturally neutral characters (John, Sarah, Mike, Priya represented with abstract avatars/colours, not ethnicity-specific features)
+- **Animations:** Smooth CSS transitions, spring physics for drag interactions, no jarring cuts
+- **Layout:** Card-based scene containers; full-width simulation panels; bottom-fixed progress bar
+- **Buttons:** Large, colourful CTA buttons with hover/press states (touch-friendly ≥ 44px targets)
+- **Feedback:** Immediate inline; no modal popups interrupting flow
+
+---
+
+## 12. Content Requirements
+
+### Fraction Ranges for Practice (Grade 3 Appropriate)
+| Denominator | Addition Examples | Subtraction Examples |
+|-------------|-------------------|----------------------|
+| /2 | 1/2 + 1/2 | — |
+| /3 | 1/3 + 1/3 | 2/3 − 1/3 |
+| /4 | 1/4 + 2/4 | 3/4 − 1/4 |
+| /5 | 2/5 + 2/5 | 4/5 − 3/5 |
+| /6 | 1/6 + 4/6 | 5/6 − 2/6 |
+| /8 | 2/8 + 3/8 | 7/8 − 4/8 |
+| /10 | 3/10 + 4/10 | 9/10 − 5/10 |
+
+Results always ≤ 1 (no improper fractions in v1.0). Results always > 0.
+
+---
+
+## 13. Roadmap
+
+| Phase | Milestone | Timeline |
+|-------|-----------|----------|
+| v1.0 | Core lesson: story + 3 sims + 10-Q practice | Week 1–4 |
+| v1.1 | Dashboard integration, teacher view | Week 5–6 |
+| v1.2 | Mobile responsive layout | Week 7–8 |
+| v2.0 | Unlike fractions, mixed numbers | Quarter 2 |
+
+---
+
+## 14. Stakeholders & Sign-off
+
+| Stakeholder | Role |
+|-------------|------|
+| Intellia SG Product Team | Owner, final approver |
+| Curriculum Designer | Content & learning flow sign-off |
+| Lead Developer | Technical feasibility review |
+| UX Designer | Visual consistency with existing lessons |
+| QA Team | Accessibility and cross-browser testing |
+
+---
+
+*Document Version 1.0 | FractionQuest PRD | Intellia SG | June 2026*

@@ -1,0 +1,892 @@
+# ⚙️ Technical Requirements Document (TRD)
+
+## FractionQuest: Addition & Subtraction of Like Fractions
+### Grade 3 Math — Gamified Simulation Website
+**Platform:** intelliasg.com | **Stack:** React (Vite) | **Version:** 1.0
+**Prepared for:** Intellia SG Engineering Team | **Date:** June 2026
+
+---
+
+## 1. Technical Overview
+
+FractionQuest is a **React Single-Page Application (SPA)** built with Vite, designed to be embedded within the existing `intelliasg.com` WordPress/LMS environment as a standalone lesson page. It is a simulation-first, audio-narrated, gamified learning experience that mirrors the architecture of the `dsamyak/equal` repository and the live reference at `equal-tau.vercel.app`.
+
+### Technology Stack Summary
+
+| Layer | Technology | Justification |
+|-------|-----------|---------------|
+| Framework | React 18 + Vite | Fast HMR, component model matches reference repo |
+| Styling | Tailwind CSS + CSS Variables | Matches reference repo; rapid utility styling |
+| Animation | Framer Motion | Spring physics, gesture support, drag-and-drop |
+| Audio | Howler.js | Reliable cross-browser audio with preloading |
+| State Management | Zustand | Lightweight global state (no Redux boilerplate) |
+| Routing | React Router v6 | Scene-based navigation within the SPA |
+| Persistence | localStorage API | Session resume without backend |
+| Testing | Vitest + React Testing Library | Unit + integration tests |
+| Deployment | Vercel (preview) → intelliasg.com | Matches reference repo deployment pattern |
+
+---
+
+## 2. Repository Structure
+
+```
+fraction-quest/
+├── public/
+│   ├── audio/
+│   │   ├── leo-intro.mp3
+│   │   ├── leo-scene1.mp3
+│   │   ├── leo-scene2.mp3
+│   │   ├── leo-scene3.mp3
+│   │   ├── leo-practice-intro.mp3
+│   │   ├── leo-celebration.mp3
+│   │   ├── sfx-correct.mp3
+│   │   ├── sfx-wrong.mp3
+│   │   ├── sfx-badge.mp3
+│   │   ├── sfx-confetti.mp3
+│   │   └── sfx-click.mp3
+│   └── images/
+│       ├── characters/
+│       │   ├── john.svg
+│       │   ├── sarah.svg
+│       │   ├── mike.svg
+│       │   ├── priya.svg
+│       │   └── leo-owl.svg
+│       └── badges/
+│           ├── fraction-explorer.svg
+│           ├── pizza-pro.svg
+│           └── perfect-slicer.svg
+├── src/
+│   ├── components/
+│   │   ├── ui/
+│   │   │   ├── Button.jsx
+│   │   │   ├── ProgressBar.jsx
+│   │   │   ├── StarRating.jsx
+│   │   │   ├── XPCounter.jsx
+│   │   │   ├── Badge.jsx
+│   │   │   ├── SpeechBubble.jsx
+│   │   │   ├── AudioPlayer.jsx
+│   │   │   └── ConfettiOverlay.jsx
+│   │   ├── simulations/
+│   │   │   ├── PizzaSimulation.jsx      ← Addition sim
+│   │   │   ├── RibbonSimulation.jsx     ← Subtraction sim
+│   │   │   └── PieSortChallenge.jsx     ← Combined sim
+│   │   ├── story/
+│   │   │   ├── SceneContainer.jsx
+│   │   │   ├── CharacterDialogue.jsx
+│   │   │   └── NarratorBox.jsx
+│   │   └── practice/
+│   │       ├── PracticeArena.jsx
+│   │       ├── QuestionCard.jsx
+│   │       ├── AnswerSelector.jsx
+│   │       ├── FeedbackOverlay.jsx
+│   │       └── ScoreSummary.jsx
+│   ├── scenes/
+│   │   ├── IntroScene.jsx
+│   │   ├── Scene1Pizza.jsx
+│   │   ├── Scene2Ribbon.jsx
+│   │   ├── Scene3Pie.jsx
+│   │   ├── PracticeScene.jsx
+│   │   └── CelebrationScene.jsx
+│   ├── store/
+│   │   ├── gameStore.js          ← Zustand: XP, stars, badges, progress
+│   │   ├── audioStore.js         ← Zustand: mute state, current track
+│   │   └── practiceStore.js      ← Zustand: questions, answers, score
+│   ├── hooks/
+│   │   ├── useAudio.js
+│   │   ├── useFractionQuestion.js
+│   │   └── useGameProgress.js
+│   ├── utils/
+│   │   ├── fractionGenerator.js  ← Random question engine
+│   │   ├── scoreCalculator.js
+│   │   └── persistence.js        ← localStorage read/write helpers
+│   ├── data/
+│   │   ├── storyScript.js        ← All character dialogue and narration text
+│   │   └── fractionBank.js       ← Fraction problem configurations
+│   ├── styles/
+│   │   ├── index.css             ← CSS variables, global resets
+│   │   └── animations.css        ← Keyframe definitions
+│   ├── App.jsx
+│   └── main.jsx
+├── scripts/                      ← Build/deploy helpers (mirrors reference repo)
+├── api/                          ← Score submission endpoint stubs
+├── .env.example
+├── tailwind.config.js
+├── vite.config.js
+└── package.json
+```
+
+---
+
+## 3. Component Architecture
+
+### 3.1 App Router Structure
+
+```jsx
+// App.jsx
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+
+<BrowserRouter>
+  <Routes>
+    <Route path="/" element={<IntroScene />} />
+    <Route path="/scene/1" element={<Scene1Pizza />} />
+    <Route path="/scene/2" element={<Scene2Ribbon />} />
+    <Route path="/scene/3" element={<Scene3Pie />} />
+    <Route path="/practice" element={<PracticeScene />} />
+    <Route path="/celebration" element={<CelebrationScene />} />
+  </Routes>
+  <ProgressBar />      {/* Fixed top — always visible */}
+  <AudioPlayer />      {/* Fixed — persistent across scenes */}
+  <XPCounter />        {/* Fixed top-right */}
+</BrowserRouter>
+```
+
+### 3.2 Scene Container Pattern
+
+Every scene follows this exact structure (matching `equal-tau.vercel.app` layout):
+
+```jsx
+// SceneContainer.jsx
+export default function SceneContainer({ children, bg, character }) {
+  return (
+    <motion.div
+      className="scene-wrapper"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+    >
+      {/* Character panel (left) */}
+      <CharacterPanel character={character} />
+
+      {/* Main content (centre/right) */}
+      <div className="scene-content">
+        {children}
+      </div>
+
+      {/* Navigation (bottom) */}
+      <SceneNav />
+    </motion.div>
+  )
+}
+```
+
+### 3.3 Global State (Zustand)
+
+```javascript
+// store/gameStore.js
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+
+export const useGameStore = create(
+  persist(
+    (set, get) => ({
+      xp: 0,
+      stars: 0,
+      badges: [],
+      currentScene: 0,
+      practiceScore: null,
+      streakCount: 0,
+
+      addXP: (amount) => set((s) => ({ xp: s.xp + amount })),
+      addStar: () => set((s) => ({ stars: s.stars + 1 })),
+      unlockBadge: (id) => set((s) => ({
+        badges: s.badges.includes(id) ? s.badges : [...s.badges, id]
+      })),
+      setScene: (n) => set({ currentScene: n }),
+      setPracticeScore: (score) => set({ practiceScore: score }),
+      incrementStreak: () => set((s) => ({ streakCount: s.streakCount + 1 })),
+      resetStreak: () => set({ streakCount: 0 }),
+    }),
+    { name: 'fraction-quest-save' }   // persists to localStorage
+  )
+)
+```
+
+---
+
+## 4. Randomised Question Engine
+
+This is a core technical requirement. Questions must be **genuinely random** on every session — not cycled from a fixed list.
+
+### 4.1 Fraction Generator Algorithm
+
+```javascript
+// utils/fractionGenerator.js
+
+const DENOMINATORS = [2, 3, 4, 5, 6, 8, 10]
+
+/**
+ * Generate a random like-fraction addition problem
+ * Ensures result ≤ 1 (no improper fractions in Grade 3)
+ */
+export function generateAddition() {
+  const denom = DENOMINATORS[Math.floor(Math.random() * DENOMINATORS.length)]
+  const a = Math.floor(Math.random() * (denom - 1)) + 1   // 1 to denom-1
+  const maxB = denom - a                                   // ensure a+b ≤ denom
+  const b = Math.floor(Math.random() * maxB) + 1          // 1 to maxB
+
+  return {
+    type: 'addition',
+    a, b, denom,
+    answer: a + b,
+    equation: `${a}/${denom} + ${b}/${denom} = ?`,
+    display: { numerator: a + b, denominator: denom }
+  }
+}
+
+/**
+ * Generate a random like-fraction subtraction problem
+ * Ensures result > 0
+ */
+export function generateSubtraction() {
+  const denom = DENOMINATORS[Math.floor(Math.random() * DENOMINATORS.length)]
+  const a = Math.floor(Math.random() * (denom - 1)) + 2   // 2 to denom
+  const b = Math.floor(Math.random() * (a - 1)) + 1       // 1 to a-1
+
+  return {
+    type: 'subtraction',
+    a, b, denom,
+    answer: a - b,
+    equation: `${a}/${denom} − ${b}/${denom} = ?`,
+    display: { numerator: a - b, denominator: denom }
+  }
+}
+
+/**
+ * Generate wrong answer distractors (plausible but incorrect)
+ */
+export function generateDistractors(correct, denom, type) {
+  const distractors = new Set()
+
+  // Common mistake: add/subtract denominators too
+  if (type === 'addition') distractors.add(`${correct.num + 1}/${correct.denom + 1}`)
+
+  // Off-by-one in numerator
+  if (correct.num > 1) distractors.add(`${correct.num - 1}/${correct.denom}`)
+  distractors.add(`${correct.num + 1}/${correct.denom}`)
+
+  // Return 2 unique distractors
+  return [...distractors].slice(0, 2)
+}
+
+/**
+ * Generate a full session of 10 shuffled questions
+ * Mix: 5 addition, 3 subtraction, 2 word problems
+ */
+export function generatePracticeSession() {
+  const questions = []
+
+  for (let i = 0; i < 5; i++) questions.push({ ...generateAddition(), questionType: 'equation' })
+  for (let i = 0; i < 3; i++) questions.push({ ...generateSubtraction(), questionType: 'equation' })
+  for (let i = 0; i < 2; i++) {
+    const base = Math.random() > 0.5 ? generateAddition() : generateSubtraction()
+    questions.push({ ...base, questionType: 'word-problem' })
+  }
+
+  // Fisher-Yates shuffle
+  for (let i = questions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [questions[i], questions[j]] = [questions[j], questions[i]]
+  }
+
+  return questions
+}
+```
+
+---
+
+## 5. Simulation Components — Technical Specification
+
+### 5.1 Pizza Simulation (Addition)
+
+```
+State:
+  - denominator: number (from question context)
+  - fraction1: number (numerator of addend 1)
+  - fraction2: number (numerator of addend 2)
+  - selectedSlices: Set<number>
+  - phase: 'select-first' | 'select-second' | 'reveal'
+
+Visual:
+  - SVG circle divided into `denominator` equal wedges
+  - Wedges are draggable (Framer Motion drag constraints)
+  - Phase 1: student taps/drags `fraction1` slices → they turn orange
+  - Phase 2: student taps `fraction2` more slices → they turn purple
+  - Phase 3: all selected slices pulse, equation builds below
+  - Number line appears below showing fraction addition
+
+Key Component: <PizzaWedge index={i} total={denom} selected={...} phase={...} />
+```
+
+**SVG Wedge Path Generation:**
+```javascript
+function wedgePath(index, total, cx, cy, r) {
+  const startAngle = (index / total) * 2 * Math.PI - Math.PI / 2
+  const endAngle = ((index + 1) / total) * 2 * Math.PI - Math.PI / 2
+  const x1 = cx + r * Math.cos(startAngle)
+  const y1 = cy + r * Math.sin(startAngle)
+  const x2 = cx + r * Math.cos(endAngle)
+  const y2 = cy + r * Math.sin(endAngle)
+  const largeArc = (1 / total) > 0.5 ? 1 : 0
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`
+}
+```
+
+### 5.2 Ribbon Simulation (Subtraction)
+
+```
+State:
+  - totalSegments: number (denominator)
+  - startFraction: number (minuend numerator)
+  - cutAmount: number (subtrahend numerator)
+  - removedSegments: Set<number>
+  - phase: 'show-start' | 'cut' | 'reveal'
+
+Visual:
+  - Horizontal bar divided into `totalSegments` equal sections
+  - startFraction sections highlighted in blue
+  - Student clicks sections to "cut" them (scissors cursor)
+  - Cut sections animate out with scissor snip effect
+  - Remaining segments glow to show result
+```
+
+### 5.3 Pie Sort Challenge (Combined)
+
+```
+State:
+  - currentProblem: FractionProblem
+  - operationType: 'addition' | 'subtraction' | null
+  - selectedAnswer: number | null
+  - attempts: number
+
+Interaction Flow:
+  1. Mike presents a pie with two fraction amounts
+  2. Student selects: [+ Add] or [− Subtract] button
+  3. A visual slider/number bar appears (denominator max segments)
+  4. Student drags to the answer position
+  5. Pie animates: slices assemble or remove to confirm
+```
+
+---
+
+## 6. Audio System — Technical Specification
+
+### 6.1 Howler.js Implementation
+
+```javascript
+// hooks/useAudio.js
+import { Howl, Howler } from 'howler'
+import { useAudioStore } from '../store/audioStore'
+
+const sounds = {
+  'leo-intro':    new Howl({ src: ['/audio/leo-intro.mp3'], preload: true }),
+  'leo-scene1':   new Howl({ src: ['/audio/leo-scene1.mp3'], preload: true }),
+  'sfx-correct':  new Howl({ src: ['/audio/sfx-correct.mp3'], volume: 0.6 }),
+  'sfx-wrong':    new Howl({ src: ['/audio/sfx-wrong.mp3'], volume: 0.4 }),
+  'sfx-badge':    new Howl({ src: ['/audio/sfx-badge.mp3'], volume: 0.8 }),
+  'sfx-confetti': new Howl({ src: ['/audio/sfx-confetti.mp3'], volume: 0.7 }),
+}
+
+export function useAudio() {
+  const { muted } = useAudioStore()
+
+  const play = (key) => {
+    if (!muted && sounds[key]) sounds[key].play()
+  }
+
+  const stopAll = () => {
+    Object.values(sounds).forEach(s => s.stop())
+  }
+
+  return { play, stopAll }
+}
+```
+
+### 6.2 Audio Narration Script (Story Dialogue)
+
+All narration text is stored in `data/storyScript.js` and displayed as subtitles simultaneously with audio playback. The audio tone and pacing strictly matches the reference audio file provided — warm, friendly, 120–130 WPM, with musical pauses between sentences.
+
+```javascript
+// data/storyScript.js
+export const STORY_SCRIPT = {
+  intro: {
+    audio: 'leo-intro',
+    narrator: 'Leo',
+    text: "Welcome to Numberville! The Fraction Festival is about to begin, and your friends need your help. Are you ready to become a Fraction Hero?"
+  },
+  scene1_open: {
+    audio: 'leo-scene1',
+    narrator: 'John',
+    text: "Hi there! I'm John, and I baked the most amazing pizza for the festival! It's cut into 8 equal slices. I ate 2 slices in the morning, and then I ate 3 more in the afternoon. How much pizza did I eat altogether?"
+  },
+  scene1_hint: {
+    narrator: 'Leo',
+    text: "Remember: when the bottom numbers are the same, we only add the top numbers! The denominator stays the same."
+  },
+  scene1_success: {
+    narrator: 'Leo',
+    text: "Fantastic! 2 eighths plus 3 eighths equals 5 eighths. You can see exactly 5 slices shaded. Amazing work!"
+  },
+  scene2_open: {
+    narrator: 'Sarah',
+    text: "Hello! I'm Sarah, and I'm decorating the festival with colourful ribbons. I have 5 sixths of a ribbon, but I need to use 2 sixths to wrap this beautiful gift. How much ribbon will I have left?"
+  },
+  scene2_hint: {
+    narrator: 'Leo',
+    text: "Subtraction of like fractions works the same way! Keep the denominator, and subtract just the top numbers."
+  },
+  scene2_success: {
+    narrator: 'Leo',
+    text: "Wonderful! 5 sixths minus 2 sixths equals 3 sixths. You can see exactly 3 ribbon segments remaining. You're getting really good at this!"
+  },
+  scene3_open: {
+    narrator: 'Mike',
+    text: "Ohhh no! I'm Mike, and I've made a complete mess of my pie pieces! Can you help me sort them out? You'll need to add AND subtract fractions to fix this!"
+  },
+  practice_intro: {
+    narrator: 'Priya',
+    text: "Incredible! I'm Priya, the festival organiser. You've learned addition AND subtraction of like fractions. Now help me set up the stalls by solving these fraction challenges!"
+  },
+  celebration: {
+    narrator: 'Leo',
+    text: "AMAZING! You did it! The Fraction Festival is saved! You are now an official Fraction Hero of Numberville. John, Sarah, Mike, and Priya are so proud of you!"
+  }
+}
+```
+
+---
+
+## 7. CSS Design System
+
+Strictly follows the visual language of `dsamyak/equal` and `equal-tau.vercel.app`.
+
+```css
+/* styles/index.css */
+
+:root {
+  /* Brand Colours — Intellia SG palette */
+  --color-primary:      #6C63FF;   /* Purple — main brand */
+  --color-secondary:    #FF6B6B;   /* Coral red — accents */
+  --color-accent:       #FFD93D;   /* Yellow — highlights, stars */
+  --color-success:      #6BCB77;   /* Green — correct answers */
+  --color-error:        #FF6B6B;   /* Red — wrong answers */
+  --color-bg:           #FFF8F0;   /* Warm cream background */
+  --color-surface:      #FFFFFF;   /* Card/panel surface */
+  --color-text:         #2D2D2D;   /* Primary text */
+  --color-text-muted:   #6B7280;   /* Secondary text */
+
+  /* Pizza Simulation Colours */
+  --pizza-slice-empty:  #F3E9D2;
+  --pizza-slice-first:  #FF8C42;   /* John's orange */
+  --pizza-slice-second: #9B5DE5;   /* Purple overlay */
+
+  /* Ribbon Colours */
+  --ribbon-active:      #4CC9F0;   /* Blue ribbon */
+  --ribbon-cut:         #E0E0E0;   /* Grey cut section */
+
+  /* Typography */
+  --font-display:  'Nunito', 'Fredoka One', sans-serif;
+  --font-body:     'Nunito', sans-serif;
+  --text-hero:     2.5rem;
+  --text-title:    1.75rem;
+  --text-subtitle: 1.25rem;
+  --text-body:     1rem;
+  --text-small:    0.875rem;
+
+  /* Spacing */
+  --radius-sm:  8px;
+  --radius-md:  16px;
+  --radius-lg:  24px;
+  --radius-xl:  32px;
+
+  /* Shadows */
+  --shadow-card:   0 4px 20px rgba(108, 99, 255, 0.12);
+  --shadow-button: 0 4px 12px rgba(108, 99, 255, 0.3);
+}
+
+/* Scene wrapper — matches equal-tau layout */
+.scene-wrapper {
+  min-height: 100vh;
+  background: var(--color-bg);
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-template-rows: auto 1fr auto;
+  gap: 0;
+}
+
+/* Character panel */
+.character-panel {
+  background: linear-gradient(180deg, #EDE7FF 0%, #D4EDFF 100%);
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  border-right: 2px solid rgba(108, 99, 255, 0.1);
+}
+
+/* Main content area */
+.scene-content {
+  padding: 2rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Question card */
+.question-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: var(--shadow-card);
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+/* Primary button */
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-xl);
+  padding: 0.875rem 2rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-subtitle);
+  box-shadow: var(--shadow-button);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  min-height: 48px;   /* Touch target */
+  min-width: 44px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+```
+
+---
+
+## 8. Practice Quiz — Technical Specification
+
+### 8.1 Question Rendering Flow
+
+```
+generatePracticeSession()     ← runs once on mount
+        ↓
+[Question 1 of 10]
+        ↓
+Student selects/inputs answer
+        ↓
+validateAnswer(selected, correct)
+        ↓
+┌── Correct ──────────────────────────────────┐
+│  + play('sfx-correct')                      │
+│  + addXP(10 + streakBonus)                  │
+│  + incrementStreak()                        │
+│  + show green feedback overlay (1.5s)       │
+│  + auto-advance to next question            │
+└─────────────────────────────────────────────┘
+┌── Incorrect ────────────────────────────────┐
+│  + play('sfx-wrong')                        │
+│  + resetStreak()                            │
+│  + shake animation on question card         │
+│  + show red feedback (1.5s) with correct Q  │
+│  + if attempts >= 2: show hint button       │
+│  + auto-advance after 2.5s                  │
+└─────────────────────────────────────────────┘
+        ↓
+[Question 2 of 10] → ... → [Question 10]
+        ↓
+ScoreSummary → CelebrationScene
+```
+
+### 8.2 Score Calculation
+
+```javascript
+// utils/scoreCalculator.js
+export function calculateScore(answers) {
+  const correct = answers.filter(a => a.isCorrect).length
+  const percentage = (correct / answers.length) * 100
+
+  const stars = percentage >= 90 ? 3
+               : percentage >= 70 ? 2
+               : percentage >= 50 ? 1 : 0
+
+  const baseXP = correct * 10
+  const bonusXP = stars * 25
+
+  return { correct, total: answers.length, percentage, stars, xp: baseXP + bonusXP }
+}
+```
+
+### 8.3 Question Type: Word Problem Generation
+
+```javascript
+const WORD_PROBLEM_TEMPLATES = [
+  (a, b, denom, op, answer) =>
+    `John baked a pizza with ${denom} equal slices. He ate ${a}/${denom} in the morning and ${b}/${denom} in the afternoon. How much did he eat in total?`,
+
+  (a, b, denom, op, answer) =>
+    `Sarah has ${a}/${denom} of a ribbon. She uses ${b}/${denom} to wrap a gift. How much ribbon does she have left?`,
+
+  (a, b, denom, op, answer) =>
+    `Mike filled ${a}/${denom} of his pie tin with berries. He ate ${b}/${denom} of the pie. How much is left?`,
+
+  (a, b, denom, op, answer) =>
+    `Priya painted ${a}/${denom} of a banner in the morning and ${b}/${denom} more in the afternoon. How much of the banner has she painted?`
+]
+
+export function generateWordProblem(problem) {
+  const template = WORD_PROBLEM_TEMPLATES[
+    Math.floor(Math.random() * WORD_PROBLEM_TEMPLATES.length)
+  ]
+  return template(problem.a, problem.b, problem.denom, problem.type, problem.answer)
+}
+```
+
+---
+
+## 9. Performance Requirements
+
+### 9.1 Bundle Size Targets
+
+| Bundle | Max Size (gzipped) |
+|--------|--------------------|
+| Main JS | < 150 KB |
+| CSS | < 30 KB |
+| Framer Motion | < 50 KB |
+| Howler.js | < 15 KB |
+| Total JS (initial) | < 250 KB |
+
+Audio files are loaded lazily; only the current scene's audio is buffered.
+
+### 9.2 Vite Configuration
+
+```javascript
+// vite.config.js
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'framer':  ['framer-motion'],
+          'howler':  ['howler'],
+          'zustand': ['zustand'],
+        }
+      }
+    },
+    chunkSizeWarningLimit: 300
+  },
+  server: {
+    port: 3000,
+    open: true
+  }
+})
+```
+
+### 9.3 Image Optimisation
+
+- All character SVGs < 15 KB each
+- Badge SVGs < 10 KB each
+- No raster images in simulation components (SVG-only)
+- Background pattern: CSS-generated (no image files)
+
+---
+
+## 10. Score Submission API
+
+When a student completes the practice quiz, the score is submitted to the Intellia SG LMS.
+
+```javascript
+// api/submitScore.js
+export async function submitScore({ userId, lessonId, score, xp, stars, badges }) {
+  const payload = {
+    user_id: userId,
+    lesson_id: lessonId,            // 'grade3-fractions-like'
+    score_percentage: score,
+    xp_earned: xp,
+    stars_earned: stars,
+    badges_unlocked: badges,
+    completed_at: new Date().toISOString()
+  }
+
+  try {
+    const res = await fetch('https://intelliasg.com/api/v1/lesson-complete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${window.__INTELLIA_TOKEN__}`  // injected by LMS
+      },
+      body: JSON.stringify(payload)
+    })
+    return res.ok
+  } catch {
+    // Non-blocking — lesson still works offline
+    console.warn('Score submission failed; saved to localStorage for retry')
+    localStorage.setItem('pending-score', JSON.stringify(payload))
+    return false
+  }
+}
+```
+
+---
+
+## 11. Accessibility Requirements
+
+| Requirement | Implementation |
+|-------------|---------------|
+| Keyboard navigation | All interactive elements reachable via Tab; Enter/Space activates |
+| Screen reader | `aria-label` on all SVG elements; `role="img"` with descriptions |
+| Colour contrast | All text meets WCAG AA (4.5:1 minimum) |
+| Motion reduction | `prefers-reduced-motion` media query disables non-essential animations |
+| Font scaling | Rem-based font sizes; no fixed px text |
+| Focus indicators | Visible 3px purple focus ring on all interactive elements |
+| Audio subtitles | All narration has simultaneous text display |
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  .scene-wrapper,
+  .pizza-wedge,
+  .ribbon-segment,
+  .confetti-piece {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+```
+
+---
+
+## 12. Testing Strategy
+
+### 12.1 Unit Tests (Vitest)
+
+```javascript
+// __tests__/fractionGenerator.test.js
+import { generateAddition, generateSubtraction, generatePracticeSession } from '../utils/fractionGenerator'
+
+describe('generateAddition', () => {
+  it('result is always ≤ 1', () => {
+    for (let i = 0; i < 1000; i++) {
+      const q = generateAddition()
+      expect(q.answer).toBeLessThanOrEqual(q.denom)
+    }
+  })
+  it('both operands are positive', () => {
+    const q = generateAddition()
+    expect(q.a).toBeGreaterThan(0)
+    expect(q.b).toBeGreaterThan(0)
+  })
+})
+
+describe('generateSubtraction', () => {
+  it('result is always > 0', () => {
+    for (let i = 0; i < 1000; i++) {
+      const q = generateSubtraction()
+      expect(q.answer).toBeGreaterThan(0)
+    }
+  })
+})
+
+describe('generatePracticeSession', () => {
+  it('returns exactly 10 questions', () => {
+    const session = generatePracticeSession()
+    expect(session).toHaveLength(10)
+  })
+  it('contains both addition and subtraction', () => {
+    const session = generatePracticeSession()
+    expect(session.some(q => q.type === 'addition')).toBe(true)
+    expect(session.some(q => q.type === 'subtraction')).toBe(true)
+  })
+})
+```
+
+### 12.2 Integration Tests
+- Full lesson flow (intro → scene 1 → scene 2 → scene 3 → practice → celebration)
+- Score submission with mocked API
+- localStorage persistence and resume
+
+### 12.3 Manual QA Checklist
+- [ ] Audio plays on all major browsers (Chrome, Firefox, Safari, Edge)
+- [ ] Simulations work with both mouse and keyboard
+- [ ] All 10 practice questions display correctly with no duplicates
+- [ ] XP and stars update correctly
+- [ ] Badge unlock animations trigger properly
+- [ ] Score submits to LMS API
+- [ ] Session resumes correctly after page refresh
+- [ ] No console errors in production build
+
+---
+
+## 13. Deployment
+
+### 13.1 Preview (Vercel)
+- Auto-deploys from `main` branch (matches reference repo pattern)
+- Preview URL: `fraction-quest.vercel.app`
+- Environment variable: `VITE_INTELLIA_API_URL`
+
+### 13.2 Production (intelliasg.com)
+- Built with `vite build`
+- Output: `dist/` directory
+- Embedded in WordPress page via `<iframe>` or as a React component loaded via WordPress shortcode
+- CDN-hosted static assets
+- HTTPS enforced
+
+### 13.3 Environment Variables
+```
+VITE_INTELLIA_API_URL=https://intelliasg.com/api/v1
+VITE_LESSON_ID=grade3-fractions-like
+VITE_AUDIO_BASE=/audio
+```
+
+---
+
+## 14. Dependencies
+
+```json
+{
+  "dependencies": {
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-router-dom": "^6.23.0",
+    "framer-motion": "^11.2.0",
+    "howler": "^2.2.4",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.0",
+    "vite": "^5.3.0",
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.19",
+    "vitest": "^1.6.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/jest-dom": "^6.4.0"
+  }
+}
+```
+
+---
+
+## 15. Risks & Mitigations
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| Audio autoplay blocked by browser | High | Medium | Require click-to-start on intro screen; all content works muted |
+| localStorage unavailable (private browsing) | Low | Low | Graceful fallback; session-memory-only mode |
+| Large audio files slow initial load | Medium | Medium | Lazy-load audio per scene; show loading indicator |
+| SVG simulation lag on older tablets | Low | High | Throttle animation to 30fps on low-perf devices via `requestAnimationFrame` |
+| LMS API downtime | Low | Low | Non-blocking submission; local retry queue |
+
+---
+
+*Document Version 1.0 | FractionQuest TRD | Intellia SG Engineering | June 2026*
