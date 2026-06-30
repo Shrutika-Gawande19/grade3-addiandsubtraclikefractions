@@ -1,17 +1,145 @@
 import { useState, useEffect, useRef } from 'react';
 import { narrate, stopNarration, audioController } from '../utils/audio';
-import { NARRATION } from '../utils/narration';
+
+/* ─────────────────────────────────────────────────
+   STORY DATA  — one complete narrative that teaches
+   both ADDITION and SUBTRACTION of like fractions
+───────────────────────────────────────────────── */
+const STORY_SLIDES = [
+  {
+    id: 1,
+    title: "The Festival Begins!",
+    image: "/images/story_pizza_john.png",
+    imageAlt: "John the pizza chef with a fraction pizza",
+    character: "John",
+    characterRole: "Pizza Chef 🍕",
+    avatarBg: "linear-gradient(135deg,#ff8c42,#ff6b00)",
+    avatarEmoji: "👨‍🍳",
+    text: "Hi! I'm John, the festival pizza chef. I sliced my specialty pizza into 8 equal pieces. In the morning I ate 2/8 of it. In the afternoon I ate 3/8 more. Can you help me figure out how much I ate in total?",
+    equation: "2/8  +  3/8  =  5/8",
+    equationColor: "#ff8c42",
+    concept: "ADDING Like Fractions",
+    conceptIcon: "➕",
+    conceptColor: "linear-gradient(135deg,#ff8c42 0%,#ff6b00 100%)",
+    highlight: "When the denominators are the same, just ADD the numerators! The bottom number never changes because the slice size stays the same.",
+    lessonTag: "Addition",
+    mascotText: "2 eighths + 3 eighths = 5 eighths! The pizza still has 8 slices — we just counted more! 🍕",
+    narrationText: "John baked a pizza cut into 8 equal slices. He ate two eighths in the morning and three eighths in the afternoon. We add the top numbers: two plus three equals five. So John ate five eighths of the pizza! The denominator stays eight because the slices are the same size.",
+  },
+  {
+    id: 2,
+    title: "What Did We Learn? (Addition)",
+    image: "/images/story_pizza_john.png",
+    imageAlt: "Fraction addition rule with pizza slices",
+    character: "Leo the Owl",
+    characterRole: "Your Guide 🦉",
+    avatarBg: "linear-gradient(135deg,#ffc107,#f9a825)",
+    avatarEmoji: "🦉",
+    text: "Let's remember what John taught us! When we add fractions with the same denominator, we only add the numerators. The denominator STAYS the same because the size of each piece doesn't change!",
+    equation: "a/n  +  b/n  =  (a+b)/n",
+    equationColor: "#ffc107",
+    concept: "The Addition Rule",
+    conceptIcon: "📏",
+    conceptColor: "linear-gradient(135deg,#ffc107 0%,#f9a825 100%)",
+    highlight: "Rule: Numerator + Numerator ÷ Same Denominator. Example: 2/8 + 3/8 = (2+3)/8 = 5/8",
+    lessonTag: "Addition",
+    mascotText: "Say it with me: same bottom, add the top! You're getting it! 🌟",
+    narrationText: "The addition rule for like fractions is simple. Keep the denominator the same, and add only the numerators. Two eighths plus three eighths equals five eighths. The pizza still has eight slices!",
+  },
+  {
+    id: 3,
+    title: "Sarah's Ribbon Problem",
+    image: "/images/story_ribbon_sarah.png",
+    imageAlt: "Sarah the ribbon decorator subtracting fractions",
+    character: "Sarah",
+    characterRole: "Ribbon Decorator 🎀",
+    avatarBg: "linear-gradient(135deg,#4cc9f0,#2196f3)",
+    avatarEmoji: "👧",
+    text: "Hello! I'm Sarah! I'm decorating the festival gates with beautiful ribbons. I have 5/6 of a ribbon. I use 2/6 of it to wrap a gift box for my friend. How much ribbon do I have left?",
+    equation: "5/6  −  2/6  =  3/6",
+    equationColor: "#4cc9f0",
+    concept: "SUBTRACTING Like Fractions",
+    conceptIcon: "➖",
+    conceptColor: "linear-gradient(135deg,#4cc9f0 0%,#2196f3 100%)",
+    highlight: "When the denominators are the same, just SUBTRACT the numerators! The denominator stays the same — the ribbon sections are still the same size.",
+    lessonTag: "Subtraction",
+    mascotText: "5 sixths minus 2 sixths = 3 sixths. Sarah still has plenty of ribbon for more decorations! 🎀",
+    narrationText: "Sarah has five sixths of a ribbon. She cuts away two sixths to wrap a gift box. We subtract the numerators: five minus two equals three. Sarah has three sixths of ribbon left! The denominator stays six.",
+  },
+  {
+    id: 4,
+    title: "What Did We Learn? (Subtraction)",
+    image: "/images/story_ribbon_sarah.png",
+    imageAlt: "Fraction subtraction rule with ribbon",
+    character: "Leo the Owl",
+    characterRole: "Your Guide 🦉",
+    avatarBg: "linear-gradient(135deg,#ffc107,#f9a825)",
+    avatarEmoji: "🦉",
+    text: "Great! Sarah showed us subtraction of like fractions. Just like addition, the denominator stays the same. We only subtract the numerators. Remember: same bottom, subtract the top!",
+    equation: "a/n  −  b/n  =  (a−b)/n",
+    equationColor: "#6bcb77",
+    concept: "The Subtraction Rule",
+    conceptIcon: "📏",
+    conceptColor: "linear-gradient(135deg,#6bcb77 0%,#43a047 100%)",
+    highlight: "Rule: Numerator − Numerator ÷ Same Denominator. Example: 5/6 − 2/6 = (5−2)/6 = 3/6",
+    lessonTag: "Subtraction",
+    mascotText: "Same bottom, subtract the top! Now you know BOTH rules! 🎉",
+    narrationText: "The subtraction rule for like fractions works the same way as addition. Keep the denominator, subtract the numerators. Five sixths minus two sixths equals three sixths!",
+  },
+  {
+    id: 5,
+    title: "Mike Needs Your Help!",
+    image: "/images/story_pie_mike.png",
+    imageAlt: "Mike the pie baker with fraction pies",
+    character: "Mike",
+    characterRole: "Pie Baker 🥧",
+    avatarBg: "linear-gradient(135deg,#b983ff,#7c3aed)",
+    avatarEmoji: "🧑‍🍳",
+    text: "Oh no! I'm Mike and I mixed up my pie equation cards! Some show addition and some show subtraction. Let me give you one to try: 3/5 + 1/5 = ? And another: 4/5 − 2/5 = ? Can you work them out?",
+    equation: "3/5 + 1/5 = 4/5  |  4/5 − 2/5 = 2/5",
+    equationColor: "#b983ff",
+    concept: "Addition AND Subtraction Together!",
+    conceptIcon: "🧩",
+    conceptColor: "linear-gradient(135deg,#b983ff 0%,#7c3aed 100%)",
+    highlight: "Whether you add or subtract, the denominator ALWAYS stays the same for like fractions. Only the numerator changes!",
+    lessonTag: "Both Operations",
+    mascotText: "Look at the sign first (+ or −), then solve the numerator. You're a fraction expert! 🧩",
+    narrationText: "Mike needs help with two equations. Three fifths plus one fifth equals four fifths. And four fifths minus two fifths equals two fifths. Whether adding or subtracting like fractions, the denominator always stays the same!",
+  },
+  {
+    id: 6,
+    title: "You're a Fraction Hero!",
+    image: "/images/story_priya_festival.png",
+    imageAlt: "Priya celebrating the Fraction Festival",
+    character: "Priya",
+    characterRole: "Festival Organizer 🏆",
+    avatarBg: "linear-gradient(135deg,#6bcb77,#43a047)",
+    avatarEmoji: "👩‍💼",
+    text: "Amazing! You helped everyone at the Fraction Festival! Now you know how to add AND subtract like fractions. You've got the TWO golden rules: same denominator — add or subtract ONLY the numerators. The festival gates are open — let's celebrate! 🎉",
+    equation: "a/n ± b/n = (a ± b)/n",
+    equationColor: "#6bcb77",
+    concept: "You Know Both Rules! 🏆",
+    conceptIcon: "🏆",
+    conceptColor: "linear-gradient(135deg,#6bcb77 0%,#43a047 100%)",
+    highlight: "GOLDEN RULE: For like fractions, the denominator stays the same. Add or subtract ONLY the numerators. That's it!",
+    lessonTag: "Summary",
+    mascotText: "You did it! Now head to the Simulator to see these rules come alive with pizza and ribbons! 🚀",
+    narrationText: "Congratulations! You have learned the golden rule of like fractions. Whether adding or subtracting, the denominator stays the same. Only the numerators change. You are now a Fraction Hero! Let's go to the simulator to practice!",
+  },
+];
 
 export default function StoryPhase({ onNext, audioEnabled }) {
   const [activeSlide, setActiveSlide] = useState(0);
+  const [animating, setAnimating] = useState(false);
   const narrationRef = useRef(null);
 
-  const slides = NARRATION.story;
+  const slide = STORY_SLIDES[activeSlide];
+  const totalSlides = STORY_SLIDES.length;
 
   useEffect(() => {
-    if (audioEnabled && slides[activeSlide]) {
+    if (audioEnabled && slide) {
       const timer = setTimeout(() => {
-        narrationRef.current = narrate(slides[activeSlide].narrationText, 'statement');
+        narrationRef.current = narrate(slide.narrationText, 'statement');
       }, 400);
       return () => {
         clearTimeout(timer);
@@ -21,163 +149,135 @@ export default function StoryPhase({ onNext, audioEnabled }) {
     }
   }, [activeSlide, audioEnabled]);
 
-  const handleNextSlide = () => {
-    audioController.playClick();
+  const goToSlide = (dir) => {
+    if (animating) return;
     if (narrationRef.current) narrationRef.current.cancel();
     stopNarration();
-
-    if (activeSlide < slides.length - 1) {
-      setActiveSlide(prev => prev + 1);
-    } else {
-      onNext();
-    }
+    setAnimating(true);
+    setTimeout(() => {
+      setActiveSlide(prev => prev + dir);
+      setAnimating(false);
+    }, 220);
   };
 
-  const handlePrevSlide = () => {
+  const handleNext = () => {
+    audioController.playClick();
+    if (activeSlide < totalSlides - 1) goToSlide(1);
+    else onNext();
+  };
+
+  const handlePrev = () => {
     if (activeSlide > 0) {
       audioController.playClick();
-      if (narrationRef.current) narrationRef.current.cancel();
-      stopNarration();
-      setActiveSlide(prev => prev - 1);
-    }
-  };
-
-  const currentSlide = slides[activeSlide];
-
-  // Helper to draw character inline SVGs dynamically
-  const renderCharacterAvatar = (characterName) => {
-    switch (characterName) {
-      case 'John':
-        return (
-          <svg viewBox="0 0 100 100" className="w-full h-full">
-            <circle cx="50" cy="50" r="45" fill="#FFE6C7" stroke="#FF8C42" strokeWidth="3" />
-            <circle cx="50" cy="42" r="22" fill="#FFA87D" />
-            {/* Chef Hat */}
-            <path d="M35 25 C35 12, 65 12, 65 25 Z" fill="#FFFFFF" stroke="#CCCCCC" strokeWidth="2" />
-            <rect x="38" y="24" width="24" height="6" fill="#FFFFFF" stroke="#CCCCCC" strokeWidth="2" />
-            {/* Eyes */}
-            <circle cx="42" cy="42" r="3.5" fill="#2D2D2D" />
-            <circle cx="58" cy="42" r="3.5" fill="#2D2D2D" />
-            {/* Smile */}
-            <path d="M43 55 Q50 62 57 55" fill="none" stroke="#2D2D2D" strokeWidth="3" strokeLinecap="round" />
-          </svg>
-        );
-      case 'Sarah':
-        return (
-          <svg viewBox="0 0 100 100" className="w-full h-full">
-            <circle cx="50" cy="50" r="45" fill="#FFEAE9" stroke="#FF6B6B" strokeWidth="3" />
-            <path d="M50 20 C25 20, 25 55, 50 55 C75 55, 75 20, 50 20 Z" fill="#FFB5B5" />
-            <circle cx="50" cy="44" r="20" fill="#FFC8C8" />
-            {/* Ribbon Headband */}
-            <path d="M32 36 Q50 28 68 36" fill="none" stroke="#4CC9F0" strokeWidth="4" />
-            <circle cx="40" cy="44" r="3" fill="#2D2D2D" />
-            <circle cx="60" cy="44" r="3" fill="#2D2D2D" />
-            <path d="M44 54 Q50 59 56 54" fill="none" stroke="#2D2D2D" strokeWidth="2.5" strokeLinecap="round" />
-          </svg>
-        );
-      case 'Mike':
-        return (
-          <svg viewBox="0 0 100 100" className="w-full h-full">
-            <circle cx="50" cy="50" r="45" fill="#E8F1F2" stroke="#4CC9F0" strokeWidth="3" />
-            {/* Hair/Cap */}
-            <path d="M25 35 Q50 15 75 35 Z" fill="#FFB703" />
-            <circle cx="50" cy="46" r="21" fill="#FFE5A3" />
-            {/* Confused eyes/brows */}
-            <path d="M37 38 L45 40" stroke="#2D2D2D" strokeWidth="2" />
-            <path d="M63 38 L55 40" stroke="#2D2D2D" strokeWidth="2" />
-            <circle cx="42" cy="45" r="3" fill="#2D2D2D" />
-            <circle cx="58" cy="45" r="3" fill="#2D2D2D" />
-            {/* Confused wiggly line mouth */}
-            <path d="M43 57 Q47 54 50 57 T57 57" fill="none" stroke="#2D2D2D" strokeWidth="2.5" strokeLinecap="round" />
-          </svg>
-        );
-      case 'Priya':
-        return (
-          <svg viewBox="0 0 100 100" className="w-full h-full">
-            <circle cx="50" cy="50" r="45" fill="#EBF7EB" stroke="#6BCB77" strokeWidth="3" />
-            <circle cx="50" cy="42" r="22" fill="#D3F8D3" />
-            {/* Glasses */}
-            <rect x="34" y="38" width="12" height="8" rx="2" fill="none" stroke="#555555" strokeWidth="2" />
-            <rect x="54" y="38" width="12" height="8" rx="2" fill="none" stroke="#555555" strokeWidth="2" />
-            <line x1="46" y1="42" x2="54" y2="42" stroke="#555555" strokeWidth="2" />
-            <circle cx="40" cy="42" r="2.5" fill="#2D2D2D" />
-            <circle cx="60" cy="42" r="2.5" fill="#2D2D2D" />
-            <path d="M44 54 Q50 60 56 54" fill="none" stroke="#2D2D2D" strokeWidth="2.5" strokeLinecap="round" />
-          </svg>
-        );
-      default:
-        return <span>🦉</span>;
+      goToSlide(-1);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center z-10 w-full max-w-4xl mx-auto mt-12">
-      {/* Journey Header Info */}
-      <div className="text-brand-gold font-display font-semibold text-xs tracking-wider uppercase mb-2">
-        Slide {activeSlide + 1} of {slides.length} · Story Mode
+    <div className="story-phase-wrapper">
+      {/* ── Slide counter ── */}
+      <div className="story-counter">
+        <span className="story-counter-text">
+          {activeSlide + 1} / {totalSlides}
+        </span>
+        <div className="story-progress-track">
+          {STORY_SLIDES.map((s, i) => (
+            <div
+              key={s.id}
+              className={`story-pip ${i === activeSlide ? 'active' : i < activeSlide ? 'done' : ''}`}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Slide Container: Dual Pane */}
-      <div className="glass-card w-full flex flex-col md:flex-row items-center gap-8 mb-8 relative">
-        {/* Left Visual Pane */}
-        <div className="w-full md:w-1/3 flex flex-col items-center justify-center p-6 border-b md:border-b-0 md:border-r border-white/10">
-          {/* Large Avatar container */}
-          <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white/5 border border-white/10 p-2 shadow-lg mb-4 flex items-center justify-center">
-            {renderCharacterAvatar(currentSlide.character)}
+      {/* ── Main Story Card ── */}
+      <div className={`story-card-modern ${animating ? 'slide-out' : 'slide-in'}`}>
+
+        {/* Image panel */}
+        <div className="story-image-panel">
+          <img
+            src={slide.image}
+            alt={slide.imageAlt}
+            className="story-illustration"
+          />
+          {/* Floating lesson tag */}
+          <div
+            className="story-lesson-tag"
+            style={{ background: slide.conceptColor }}
+          >
+            {slide.conceptIcon} {slide.lessonTag}
           </div>
-          <span className="text-white font-display font-bold text-xl">{currentSlide.character}</span>
-          <span className="text-brand-gold font-display text-xs uppercase tracking-widest mt-1 font-bold">
-            {currentSlide.characterRole}
-          </span>
+          {/* Equation pill on the image */}
+          <div className="story-equation-pill" style={{ color: slide.equationColor }}>
+            {slide.equation}
+          </div>
         </div>
 
-        {/* Right Content Pane */}
-        <div className="w-full md:w-2/3 flex flex-col items-center md:items-start text-center md:text-left">
-          {/* speech label */}
-          <div className="character-badge self-center md:self-start">
-            <span className="text-lg">🗣️</span>
-            <span className="text-white font-display font-semibold text-sm">Dialogue</span>
-          </div>
-          
-          {/* Main text speech */}
-          <p className="text-white text-lg md:text-xl font-body leading-relaxed mb-6">
-            "{currentSlide.text}"
-          </p>
+        {/* Content panel */}
+        <div className="story-content-panel">
+          {/* Title */}
+          <h2 className="story-slide-title">{slide.title}</h2>
 
-          {/* Core concept takeaway panel */}
-          <div className="p-4 bg-white/5 border border-white/10 rounded-xl mb-6 w-full font-body text-xs text-brand-gold leading-relaxed flex items-start gap-2.5">
-            <span className="text-lg">💡</span>
-            <div>
-              <strong className="block mb-0.5">Fraction Key Rule:</strong>
-              {currentSlide.highlight}
+          {/* Character row */}
+          <div className="story-character-row">
+            <div
+              className="story-avatar"
+              style={{ background: slide.avatarBg }}
+            >
+              <span className="story-avatar-emoji">{slide.avatarEmoji}</span>
+            </div>
+            <div className="story-character-info">
+              <span className="story-character-name">{slide.character}</span>
+              <span className="story-character-role">{slide.characterRole}</span>
             </div>
           </div>
 
-          {/* Navigation controls inside card */}
-          <div className="flex justify-between items-center w-full mt-4">
+          {/* Dialogue */}
+          <div className="story-dialogue-bubble">
+            <span className="story-dialogue-icon">🗣️</span>
+            <p className="story-dialogue-text">"{slide.text}"</p>
+          </div>
+
+          {/* Concept highlight */}
+          <div
+            className="story-concept-box"
+            style={{ borderColor: slide.equationColor + '55', background: slide.equationColor + '11' }}
+          >
+            <span className="story-concept-icon">{slide.conceptIcon}</span>
+            <div>
+              <strong className="story-concept-name" style={{ color: slide.equationColor }}>
+                {slide.concept}
+              </strong>
+              <p className="story-concept-rule">{slide.highlight}</p>
+            </div>
+          </div>
+
+          {/* Mascot line */}
+          <div className="story-mascot-row">
+            <div className="story-mascot-avatar">🦉</div>
+            <div className="story-mascot-bubble">
+              <strong>Leo: </strong>{slide.mascotText}
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div className="story-nav-row">
             <button
-              onClick={handlePrevSlide}
+              className="btn btn-sm btn-outline"
+              onClick={handlePrev}
               disabled={activeSlide === 0}
-              className={`btn btn-sm btn-outline ${activeSlide === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+              style={{ opacity: activeSlide === 0 ? 0.3 : 1 }}
             >
-              ⬅️ Back
+              ← Back
             </button>
             <button
-              onClick={handleNextSlide}
-              className="btn btn-sm btn-primary"
+              className="btn btn-sm btn-primary story-next-btn"
+              onClick={handleNext}
             >
-              {activeSlide === slides.length - 1 ? 'Go to Simulator 🧪' : 'Next Story ➡️'}
+              {activeSlide === totalSlides - 1 ? '🧪 Go to Simulator' : 'Next →'}
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Mascot bubble */}
-      <div className="bg-brand-cardSolid/80 border border-white/10 p-4 rounded-2xl max-w-xl shadow-lg relative flex gap-3 text-left w-full">
-        <span className="text-2xl flex-shrink-0">🦉</span>
-        <p className="text-brand-textSecondary text-sm font-body">
-          <strong>Leo: </strong>{currentSlide.mascotText}
-        </p>
       </div>
     </div>
   );

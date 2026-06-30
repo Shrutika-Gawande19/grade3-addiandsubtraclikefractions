@@ -2,36 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 import { narrate, stopNarration, audioController } from '../utils/audio';
 import { NARRATION } from '../utils/narration';
 
-/*
-  Structure mirrors equal-tau.vercel.app intro:
-    .intro-screen  (full-viewport centered column)
-      .intro-badge   (small pill label — subject + grade)
-      .mascot-container  (owl + speech bubble)
-      .intro-title   (big topic name)
-      .intro-desc    (1-2 line description)
-      .intro-journey-map  (glass panel with step icons → arrows)
-      .intro-start-btn  (CTA)
-*/
-
 const JOURNEY = [
-  { icon: '🔍', label: 'Wonder', desc: 'Explore the puzzle' },
-  { icon: '📖', label: 'Story', desc: 'Meet the characters' },
-  { icon: '🧪', label: 'Simulate', desc: 'Visual fractions' },
-  { icon: '🎮', label: 'Play', desc: 'Practice challenges' },
-  { icon: '🏆', label: 'Reflect', desc: 'Earn your badge!' },
+  { icon: '🔍', label: 'Wonder',   desc: 'Explore the puzzle',   color: '#a78bfa' },
+  { icon: '📖', label: 'Story',    desc: 'Meet the characters',  color: '#fbbf24' },
+  { icon: '🧪', label: 'Simulate', desc: 'Visual fractions',     color: '#34d399' },
+  { icon: '🎮', label: 'Play',     desc: 'Practice challenges',  color: '#60a5fa' },
+  { icon: '🏆', label: 'Reflect',  desc: 'Earn your badge!',     color: '#f87171' },
 ];
 
 export default function IntroScreen({ onStart, audioEnabled }) {
   const narrationRef = useRef(null);
   const [ready, setReady] = useState(false);
 
-  // Entrance animation trigger
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 80);
     return () => clearTimeout(t);
   }, []);
 
-  // Narrate on mount
   useEffect(() => {
     if (audioEnabled) {
       const t = setTimeout(() => {
@@ -54,40 +41,47 @@ export default function IntroScreen({ onStart, audioEnabled }) {
 
   return (
     <div className="intro-screen">
+
       {/* ── Badge pill ── */}
       <div className="intro-badge" style={{ animationDelay: '0.1s' }}>
-        ✨ &nbsp;Grade 3 Math&nbsp; · &nbsp; ✨
+        ✨ &nbsp;Grade 3 Math&nbsp; · &nbsp;Fractions&nbsp; ✨
       </div>
 
       {/* ── Mascot row ── */}
       <div className="mascot-container">
         <div className="mascot">🦉</div>
         <div className="speech-bubble">
-          Hi, I'm <strong>Leo!</strong> Ready to explore fractions?
+          Hi, I'm <strong>Leo!</strong> Ready to master fractions? 🚀
         </div>
       </div>
 
-      {/* ── Title (the topic name) ── */}
-      <h1 className="intro-title">
-        Addition &amp; Subtraction<br />
-        of Related Fractions
+      {/* ── BIG colourful topic title (plain text, like reference) ── */}
+      <h1 className="intro-hero-title">
+        <span className="intro-title-yellow">Like Fractions —</span>{' '}
+        <span className="intro-title-orange">Addition &amp; Subtraction</span>
       </h1>
 
       {/* ── Description ── */}
       <p className="intro-desc">
-        Learn how to <strong>add</strong> and <strong>subtract</strong> fractions that share the same denominator through
-        interactive stories, simulations, and gamified practice!
+        Go on a <strong style={{ color: '#fbbf24' }}>festival adventure</strong> with John, Sarah, Mike &amp; Priya
+        — and learn how to <strong style={{ color: '#34d399' }}>add</strong> and <strong style={{ color: '#f87171' }}>subtract</strong> fractions
+        that share the same denominator!
       </p>
 
       {/* ── Journey map ── */}
       <div className="intro-journey-map">
-        <div className="intro-journey-title">Your Learning Journey</div>
+        <div className="intro-journey-title">✨ Your Learning Journey ✨</div>
         <div className="intro-journey-steps">
           {JOURNEY.map((step, idx) => (
             <div key={step.label} className="intro-journey-step">
-              <div className="intro-journey-icon">{step.icon}</div>
+              <div
+                className="intro-journey-icon"
+                style={{ background: step.color + '22', border: `2px solid ${step.color}55` }}
+              >
+                {step.icon}
+              </div>
               <div className="intro-journey-info">
-                <div className="intro-journey-label">{step.label}</div>
+                <div className="intro-journey-label" style={{ color: step.color }}>{step.label}</div>
                 <div className="intro-journey-desc">{step.desc}</div>
               </div>
               {idx < JOURNEY.length - 1 && (
@@ -98,23 +92,23 @@ export default function IntroScreen({ onStart, audioEnabled }) {
         </div>
       </div>
 
-      {/* ── Feature cards (quick highlights) ── */}
+      {/* ── Feature cards (colourful) ── */}
       <div className="feature-cards">
-        <div className="feature-card">
+        <div className="feature-card" style={{ borderColor: '#fbbf2455', background: '#fbbf2411' }}>
           <div className="feature-card-icon">🍕</div>
-          <div className="feature-card-label">Pizza &amp; Pie Sims</div>
+          <div className="feature-card-label" style={{ color: '#fbbf24' }}>Pizza &amp; Pie Sims</div>
         </div>
-        <div className="feature-card">
+        <div className="feature-card" style={{ borderColor: '#60a5fa55', background: '#60a5fa11' }}>
           <div className="feature-card-icon">🎯</div>
-          <div className="feature-card-label">10 Random Qs</div>
+          <div className="feature-card-label" style={{ color: '#60a5fa' }}>10 Random Qs</div>
         </div>
-        <div className="feature-card">
+        <div className="feature-card" style={{ borderColor: '#34d39955', background: '#34d39911' }}>
           <div className="feature-card-icon">⭐</div>
-          <div className="feature-card-label">Stars &amp; Badges</div>
+          <div className="feature-card-label" style={{ color: '#34d399' }}>Stars &amp; Badges</div>
         </div>
-        <div className="feature-card">
+        <div className="feature-card" style={{ borderColor: '#a78bfa55', background: '#a78bfa11' }}>
           <div className="feature-card-icon">🔊</div>
-          <div className="feature-card-label">Audio Narration</div>
+          <div className="feature-card-label" style={{ color: '#a78bfa' }}>Audio Narration</div>
         </div>
       </div>
 
