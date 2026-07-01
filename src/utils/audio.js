@@ -29,6 +29,8 @@ const SPEECH_STYLES = {
   instruction: { rate: 0.85, pitch: 1.1 },
 };
 
+import { audioMap } from './audioMap';
+
 // Narration Player
 export function narrate(text, style = 'statement', onEndCallback = null) {
   if (isMuted) {
@@ -38,12 +40,51 @@ export function narrate(text, style = 'statement', onEndCallback = null) {
 
   stopNarration();
 
+  // 1. Check Cache (audioMap)
+  if (audioMap[text]) {
+    const audio = new Audio(audioMap[text]);
+    
+    audio.onended = () => {
+      if (currentUtterance === audio) {
+        currentUtterance = null;
+      }
+      if (onEndCallback) onEndCallback();
+    };
+
+    audio.onerror = () => {
+      console.warn("Failed to play pre-generated audio, falling back to TTS");
+      if (currentUtterance === audio) currentUtterance = null;
+      fallbackNarrate(text, style, onEndCallback);
+    };
+
+    currentUtterance = audio;
+    audio.play().catch(e => {
+      console.warn("Autoplay blocked or failed:", e);
+      if (currentUtterance === audio) currentUtterance = null;
+      fallbackNarrate(text, style, onEndCallback);
+    });
+
+    return {
+      cancel: () => {
+        if (currentUtterance === audio) {
+          audio.pause();
+          audio.currentTime = 0;
+          currentUtterance = null;
+        }
+      }
+    };
+  }
+
+  // 2. Dynamic Fallback
+  return fallbackNarrate(text, style, onEndCallback);
+}
+
+function fallbackNarrate(text, style, onEndCallback) {
   const utterance = new SpeechSynthesisUtterance(text);
   const settings = SPEECH_STYLES[style] || SPEECH_STYLES.statement;
   utterance.rate = settings.rate;
   utterance.pitch = settings.pitch;
 
-  // Try to find a friendly English voice (prefer female/child-like if available, else default English)
   const voices = window.speechSynthesis.getVoices();
   const englishVoice = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('google')) || 
                        voices.find(v => v.lang.startsWith('en')) || 
@@ -54,16 +95,12 @@ export function narrate(text, style = 'statement', onEndCallback = null) {
   }
 
   utterance.onend = () => {
-    if (currentUtterance === utterance) {
-      currentUtterance = null;
-    }
+    if (currentUtterance === utterance) currentUtterance = null;
     if (onEndCallback) onEndCallback();
   };
 
   utterance.onerror = () => {
-    if (currentUtterance === utterance) {
-      currentUtterance = null;
-    }
+    if (currentUtterance === utterance) currentUtterance = null;
     if (onEndCallback) onEndCallback();
   };
 
@@ -81,7 +118,12 @@ export function narrate(text, style = 'statement', onEndCallback = null) {
 }
 
 export function stopNarration() {
-  window.speechSynthesis.cancel();
+  if (currentUtterance instanceof Audio) {
+    currentUtterance.pause();
+    currentUtterance.currentTime = 0;
+  } else if (currentUtterance instanceof SpeechSynthesisUtterance) {
+    window.speechSynthesis.cancel();
+  }
   currentUtterance = null;
 }
 
