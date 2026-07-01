@@ -317,18 +317,7 @@ export default function App() {
   const [totalXP, setTotalXP] = useState(0);
   const [earnedBadges, setEarnedBadges] = useState([]);
 
-  // Restore from localStorage
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('fraction-quest-save') || '{}');
-      if (saved.phase && saved.phase !== 'celebration') setPhase(saved.phase);
-    } catch {/* ignore */}
-  }, []);
 
-  // Persist phase
-  useEffect(() => {
-    localStorage.setItem('fraction-quest-save', JSON.stringify({ phase }));
-  }, [phase]);
 
   const toggleAudio = () => {
     const next = !audioEnabled;
